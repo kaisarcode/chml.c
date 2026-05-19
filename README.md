@@ -1,6 +1,6 @@
 # chml.c - ChatML Message Wrapper
 
-`chml` reads text from standard input and wraps it in a single [ChatML](https://github.com/openai/openai-python/blob/main/chatml.md) message. It supports the `system`, `assistant`, and `user` roles, defaulting to `user`.
+`chml` reads text from standard input and wraps it in a single ChatML message. It supports the `system`, `assistant`, and `user` roles, defaulting to `user`.
 
 ---
 
