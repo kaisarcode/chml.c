@@ -103,42 +103,48 @@ kc_test_empty_stdin() {
 # Tests that piping "Hello" produces correct ChatML with default role (user).
 # @return 0 on success, 1 on failure.
 kc_test_default_role() {
-    output=$(printf 'Hello' | "$BIN" 2>/dev/null)
-    expected='<|im_start|>user
-Hello
-<|im_end|>'
-    if [ "$output" != "$expected" ]; then
+    outfile=$(mktemp)
+    printf 'Hello' | "$BIN" > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '<|im_start|>user\nHello\n<|im_end|>\n' > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
         kc_test_fail "default role output mismatch"
         return 1
     fi
+    rm -f "$outfile" "$exfile"
     kc_test_pass "default role"
 }
 
 # Tests that --role system produces correct ChatML.
 # @return 0 on success, 1 on failure.
 kc_test_role_system() {
-    output=$(printf 'You are a bot.' | "$BIN" --role system 2>/dev/null)
-    expected='<|im_start|>system
-You are a bot.
-<|im_end|>'
-    if [ "$output" != "$expected" ]; then
+    outfile=$(mktemp)
+    printf 'You are a bot.' | "$BIN" --role system > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '<|im_start|>system\nYou are a bot.\n<|im_end|>\n' > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
         kc_test_fail "role system output mismatch"
         return 1
     fi
+    rm -f "$outfile" "$exfile"
     kc_test_pass "role system"
 }
 
 # Tests that --role assistant produces correct ChatML.
 # @return 0 on success, 1 on failure.
 kc_test_role_assistant() {
-    output=$(printf 'I am a bot.' | "$BIN" -r assistant 2>/dev/null)
-    expected='<|im_start|>assistant
-I am a bot.
-<|im_end|>'
-    if [ "$output" != "$expected" ]; then
+    outfile=$(mktemp)
+    printf 'I am a bot.' | "$BIN" -r assistant > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '<|im_start|>assistant\nI am a bot.\n<|im_end|>\n' > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
         kc_test_fail "role assistant output mismatch"
         return 1
     fi
+    rm -f "$outfile" "$exfile"
     kc_test_pass "role assistant"
 }
 

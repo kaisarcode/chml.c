@@ -147,6 +147,13 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    {
+        size_t sl = strlen(stdin_text);
+        while (sl > 0 && (stdin_text[sl - 1] == '\n' ||
+            stdin_text[sl - 1] == '\r'))
+            stdin_text[--sl] = '\0';
+    }
+
     kc_chml_t *ctx = kc_chml_open();
     if (!ctx) {
         fprintf(stderr, "chml: out of memory\n");

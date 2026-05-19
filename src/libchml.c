@@ -92,14 +92,14 @@ char *kc_chml_render(const kc_chml_t *ctx, const char *content) {
     size_t content_len = strlen(content);
 
     size_t prefix_len = 12;
-    size_t suffix_len = 11;
+    size_t suffix_len = 12;
 
     size_t total = prefix_len + role_len + 1 + content_len + suffix_len + 1;
     char *out = malloc(total);
     if (!out) return NULL;
 
     int n = snprintf(out, total,
-        "<|im_start|>%s\n%s\n<|im_end|>", role_name, content);
+        "<|im_start|>%s\n%s\n<|im_end|>\n", role_name, content);
     if (n < 0 || (size_t)n >= total) {
         free(out);
         return NULL;
