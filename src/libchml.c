@@ -95,11 +95,21 @@ char *kc_chml_render(const kc_chml_t *ctx, const char *content) {
     size_t suffix_len = 12;
 
     size_t total = prefix_len + role_len + 1 + content_len + suffix_len + 1;
+    if (ctx->role == KC_CHML_ROLE_USER)
+        total += 22;
+
     char *out = malloc(total);
     if (!out) return NULL;
 
-    int n = snprintf(out, total,
-        "<|im_start|>%s\n%s\n<|im_end|>\n", role_name, content);
+    int n;
+    if (ctx->role == KC_CHML_ROLE_USER) {
+        n = snprintf(out, total,
+            "<|im_start|>%s\n%s\n<|im_end|>\n<|im_start|>assistant\n",
+            role_name, content);
+    } else {
+        n = snprintf(out, total,
+            "<|im_start|>%s\n%s\n<|im_end|>\n", role_name, content);
+    }
     if (n < 0 || (size_t)n >= total) {
         free(out);
         return NULL;

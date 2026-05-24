@@ -106,7 +106,7 @@ kc_test_default_role() {
     outfile=$(mktemp)
     printf 'Hello' | "$BIN" > "$outfile" 2>/dev/null
     exfile=$(mktemp)
-    printf '<|im_start|>user\nHello\n<|im_end|>\n' > "$exfile"
+    printf '<|im_start|>user\nHello\n<|im_end|>\n<|im_start|>assistant\n' > "$exfile"
     if ! cmp -s "$outfile" "$exfile"; then
         rm -f "$outfile" "$exfile"
         kc_test_fail "default role output mismatch"
