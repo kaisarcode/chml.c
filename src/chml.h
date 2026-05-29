@@ -24,18 +24,26 @@ typedef struct kc_chml kc_chml_t;
 #define KC_CHML_ROLE_USER       2
 
 /**
- * Create a new ChatML context.
- * @return Context pointer or NULL on failure.
+ * ChatML options.
+ * @param role Message role string (e.g., "system", "assistant", "user").
  */
-kc_chml_t *kc_chml_open(void);
+typedef struct kc_chml_options {
+    char *role;
+} kc_chml_options_t;
 
 /**
- * Set the message role.
- * @param ctx Context pointer.
- * @param role Role constant (KC_CHML_ROLE_*).
- * @return KC_CHML_OK or KC_CHML_ERROR.
+ * Callback type for library-level signal handling.
+ * @param ctx ChatML context.
  */
-int kc_chml_set_role(kc_chml_t *ctx, int role);
+typedef void (*kc_chml_signal_callback_t)(kc_chml_t *ctx);
+
+/**
+ * Create a new ChatML context.
+ * @param out Pointer to receive the context pointer.
+ * @param opts Options.
+ * @return KC_CHML_OK on success, or KC_CHML_ERROR on failure.
+ */
+int kc_chml_open(kc_chml_t **out, const kc_chml_options_t *opts);
 
 /**
  * Get the current role constant.
@@ -66,6 +74,66 @@ char *kc_chml_render(const kc_chml_t *ctx, const char *content);
  * @return None.
  */
 void kc_chml_close(kc_chml_t *ctx);
+
+/**
+ * Create an options struct initialized with default values.
+ * @param none Unused.
+ * @return Default-initialized options.
+ */
+kc_chml_options_t kc_chml_options_default(void);
+
+/**
+ * Load configuration from environment variables.
+ * @param opts Options to update.
+ * @return None.
+ */
+void kc_chml_options_load_env(kc_chml_options_t *opts);
+
+/**
+ * Free dynamically allocated resources within an options struct.
+ * @param opts Options to clean up.
+ * @return None.
+ */
+void kc_chml_options_free(kc_chml_options_t *opts);
+
+/**
+ * Register a handler for a library-level signal number.
+ * @param ctx ChatML context.
+ * @param sig Application-defined signal number.
+ * @param cb Callback to invoke.
+ * @return KC_CHML_OK on success, or KC_CHML_ERROR on failure.
+ */
+int kc_chml_on_signal(kc_chml_t *ctx, int sig, kc_chml_signal_callback_t cb);
+
+/**
+ * Raise a library-level signal.
+ * @param ctx ChatML context.
+ * @param sig Signal number to raise.
+ * @return KC_CHML_OK if handled, or KC_CHML_ERROR if no handler.
+ */
+int kc_chml_raise_signal(kc_chml_t *ctx, int sig);
+
+/**
+ * Set the internal signal-listener context.
+ * @param ctx ChatML context.
+ * @return KC_CHML_OK on success, or KC_CHML_ERROR if ctx is NULL.
+ */
+int kc_chml_listen_signals(kc_chml_t *ctx);
+
+/**
+ * Wire an OS signal to the library signal listener.
+ * @param ctx ChatML context.
+ * @param sig_id OS signal number.
+ * @return KC_CHML_OK on success, or KC_CHML_ERROR on failure.
+ */
+int kc_chml_listen_signal(kc_chml_t *ctx, int sig_id);
+
+/**
+ * Generic signal-listener compatible with signal() / sigaction().
+ * @param sig OS signal number.
+ * @return None.
+ */
+void kc_chml_signal_listener(int sig);
 
 #ifdef __cplusplus
 }

@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KC_CHML_VERSION "1.0.1"
+#define KC_CHML_VERSION "1.1.0"
 
 /**
  * Reads text from standard input into a dynamically allocated buffer.
@@ -62,18 +62,6 @@ static int kc_chml_read_stdin(char **out_text) {
 }
 
 /**
- * Parse role name string to role constant.
- * @param name Role name.
- * @return Role constant or -1 on invalid.
- */
-static int kc_chml_parse_role(const char *name) {
-    if (strcmp(name, "system") == 0) return KC_CHML_ROLE_SYSTEM;
-    if (strcmp(name, "assistant") == 0) return KC_CHML_ROLE_ASSISTANT;
-    if (strcmp(name, "user") == 0) return KC_CHML_ROLE_USER;
-    return -1;
-}
-
-/**
  * Print command usage information.
  * @param name Program executable name.
  * @return None.
@@ -106,9 +94,11 @@ static void kc_print_version(void) {
  * @return Process status code.
  */
 int main(int argc, char **argv) {
-    int role = KC_CHML_ROLE_USER;
+    kc_chml_options_t opts = kc_chml_options_default();
     char *stdin_text = NULL;
     int i = 1;
+
+    kc_chml_options_load_env(&opts);
 
     while (i < argc) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
@@ -122,28 +112,37 @@ int main(int argc, char **argv) {
             strcmp(argv[i], "--role") == 0) {
             if (++i >= argc) {
                 fprintf(stderr, "chml: missing value for %s\n", argv[i - 1]);
+                kc_chml_options_free(&opts);
                 return 1;
             }
-            int parsed = kc_chml_parse_role(argv[i]);
-            if (parsed < 0) {
-                fprintf(stderr, "chml: invalid role '%s'\n", argv[i]);
-                return 1;
-            }
-            role = parsed;
+            free(opts.role);
+            opts.role = strdup(argv[i]);
         } else {
             fprintf(stderr, "chml: unknown option '%s'\n", argv[i]);
+            kc_chml_options_free(&opts);
             return 1;
         }
         i++;
     }
 
+    kc_chml_t *ctx = NULL;
+    if (kc_chml_open(&ctx, &opts) != KC_CHML_OK) {
+        fprintf(stderr, "chml: open failed\n");
+        kc_chml_options_free(&opts);
+        return 1;
+    }
+
     if (kc_chml_read_stdin(&stdin_text) != 0) {
         fprintf(stderr, "chml: failed to read stdin\n");
+        kc_chml_close(ctx);
+        kc_chml_options_free(&opts);
         return 1;
     }
 
     if (!stdin_text || !*stdin_text) {
         free(stdin_text);
+        kc_chml_close(ctx);
+        kc_chml_options_free(&opts);
         return 0;
     }
 
@@ -154,20 +153,18 @@ int main(int argc, char **argv) {
             stdin_text[--sl] = '\0';
     }
 
-    kc_chml_t *ctx = kc_chml_open();
-    if (!ctx) {
-        fprintf(stderr, "chml: out of memory\n");
-        free(stdin_text);
-        return 1;
-    }
-
-    kc_chml_set_role(ctx, role);
+    kc_chml_listen_signals(ctx);
+#ifndef _WIN32
+    kc_chml_listen_signal(ctx, 2);
+    kc_chml_listen_signal(ctx, 15);
+#endif
 
     char *result = kc_chml_render(ctx, stdin_text);
     if (!result) {
         fprintf(stderr, "chml: render failed\n");
         kc_chml_close(ctx);
         free(stdin_text);
+        kc_chml_options_free(&opts);
         return 1;
     }
 
@@ -176,5 +173,6 @@ int main(int argc, char **argv) {
     free(result);
     kc_chml_close(ctx);
     free(stdin_text);
+    kc_chml_options_free(&opts);
     return 0;
 }

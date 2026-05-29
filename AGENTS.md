@@ -48,7 +48,7 @@ Three-file split following kclib conventions. `chml.h` exposes the opaque `kc_ch
 |----------|-------------|
 | `-r`, `--role ROLE` | Message role: system, assistant, or user |
 | `-h`, `--help` | Print usage and exit 0 |
-| `-v`, `--version` | Print version (`chml 1.0.1`) and exit 0 |
+| `-v`, `--version` | Print version (`chml 1.1.0`) and exit 0 |
 
 ### Exit Codes
 | Code | Meaning |
