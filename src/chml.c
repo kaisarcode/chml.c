@@ -71,7 +71,7 @@ static void kc_print_help(const char *name) {
     printf("\n");
     printf("Options:\n");
     printf("  -r, --role ROLE    Message role: system, assistant, or user\n");
-    printf("  -h, --help         Show this help message\n");
+    printf("  -h, --help         Show this help\n");
     printf("  -v, --version      Show version\n");
     printf("\n");
     printf("Examples:\n");
