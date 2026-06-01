@@ -168,6 +168,58 @@ kc_test_missing_role_value() {
     kc_test_pass "missing role value"
 }
 
+# Tests that -f gemma produces correct Gemma format with default role (user).
+# @return 0 on success, 1 on failure.
+kc_test_format_gemma() {
+    outfile=$(mktemp)
+    printf 'Hello' | "$BIN" -f gemma > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '<|turn|>user\nHello\n<|turn|>\n<|turn|>model\n' > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
+        kc_test_fail "format gemma output mismatch"
+        return 1
+    fi
+    rm -f "$outfile" "$exfile"
+    kc_test_pass "format gemma"
+}
+
+# Tests that --format gemma --role system produces correct Gemma format.
+# @return 0 on success, 1 on failure.
+kc_test_format_gemma_system() {
+    outfile=$(mktemp)
+    printf 'You are a bot.' | "$BIN" --format gemma --role system > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '<|turn|>system\nYou are a bot.\n<|turn|>\n' > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
+        kc_test_fail "format gemma system output mismatch"
+        return 1
+    fi
+    rm -f "$outfile" "$exfile"
+    kc_test_pass "format gemma system"
+}
+
+# Tests that an invalid format value fails.
+# @return 0 on success, 1 on failure.
+kc_test_invalid_format() {
+    if "$BIN" -f invalid 2>/dev/null; then
+        kc_test_fail "invalid format should fail"
+        return 1
+    fi
+    kc_test_pass "invalid format"
+}
+
+# Tests that -f without a value fails.
+# @return 0 on success, 1 on failure.
+kc_test_missing_format_value() {
+    if "$BIN" -f 2>/dev/null; then
+        kc_test_fail "missing format value should fail"
+        return 1
+    fi
+    kc_test_pass "missing format value"
+}
+
 # Runs the full validation suite.
 # @return 0 on success, 1 on failure.
 kc_test_main() {
@@ -184,6 +236,10 @@ kc_test_main() {
     kc_test_role_assistant    || failed=$((failed + 1))
     kc_test_invalid_role      || failed=$((failed + 1))
     kc_test_missing_role_value || failed=$((failed + 1))
+    kc_test_format_gemma      || failed=$((failed + 1))
+    kc_test_format_gemma_system || failed=$((failed + 1))
+    kc_test_invalid_format    || failed=$((failed + 1))
+    kc_test_missing_format_value || failed=$((failed + 1))
 
     return $failed
 }

@@ -1,6 +1,6 @@
 # chml.c - ChatML Message Wrapper
 
-`chml` reads text from standard input and wraps it in a single ChatML message. It supports the `system`, `assistant`, and `user` roles, defaulting to `user`.
+`chml` reads text from standard input and wraps it in a single message. It supports the `system`, `assistant`, and `user` roles, defaulting to `user`. Two output formats are available: ChatML (`<|im_start|>`) and Gemma (`<|turn|>`).
 
 ---
 
@@ -16,7 +16,11 @@ echo 'Hello' | ./bin/x86_64/linux/chml
 echo 'You are a helpful assistant.' | ./bin/x86_64/linux/chml --role system
 ```
 
-### Output
+```bash
+echo 'Hello' | ./bin/x86_64/linux/chml --format gemma
+```
+
+### Output (ChatML, default)
 
 ```
 <|im_start|>user
@@ -24,11 +28,21 @@ Hello
 <|im_end|>
 ```
 
+### Output (Gemma)
+
+```
+<|turn|>user
+Hello
+<|turn|>
+<|turn|>model
+```
+
 ### Parameters
 
 | Flag | Description |
 | :--- | :--- |
 | `-r`, `--role ROLE` | Message role: `system`, `assistant`, or `user` |
+| `-f`, `--format FMT` | Output format: `chatml` (default) or `gemma` |
 | `-h`, `--help` | Show help and usage |
 | `-v`, `--version` | Show version |
 
@@ -39,8 +53,14 @@ Hello
 ```c
 #include "chml.h"
 
-kc_chml_t *ctx = kc_chml_open();
-kc_chml_set_role(ctx, KC_CHML_ROLE_SYSTEM);
+kc_chml_options_t opts = kc_chml_options_default();
+opts.role = "system";
+opts.format = KC_CHML_FMT_CHATML;
+
+kc_chml_t *ctx = NULL;
+if (kc_chml_open(&ctx, &opts) != KC_CHML_OK) {
+    return 1;
+}
 
 char *msg = kc_chml_render(ctx, "You are a bot.");
 printf("%s", msg);
@@ -56,6 +76,13 @@ kc_chml_close(ctx);
 | `KC_CHML_ROLE_SYSTEM` | 0 | `system` |
 | `KC_CHML_ROLE_ASSISTANT` | 1 | `assistant` |
 | `KC_CHML_ROLE_USER` | 2 | `user` |
+
+### Format Constants
+
+| Constant | Value |
+|----------|-------|
+| `KC_CHML_FMT_CHATML` | 0 |
+| `KC_CHML_FMT_GEMMA` | 1 |
 
 ---
 

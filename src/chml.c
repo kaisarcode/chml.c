@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KC_CHML_VERSION "1.1.0"
+#define KC_CHML_VERSION "1.2.0"
 
 /**
  * Reads text from standard input into a dynamically allocated buffer.
@@ -71,11 +71,13 @@ static void kc_print_help(const char *name) {
     printf("\n");
     printf("Options:\n");
     printf("  -r, --role ROLE    Message role: system, assistant, or user\n");
+    printf("  -f, --format FMT   Output format: chatml (default) or gemma\n");
     printf("  -h, --help         Show this help\n");
     printf("  -v, --version      Show version\n");
     printf("\n");
     printf("Examples:\n");
     printf("  echo 'Hola' | %s\n", name);
+    printf("  echo 'Hola' | %s -f gemma\n", name);
     printf("  echo 'You are a bot.' | %s --role system\n", name);
 }
 
@@ -117,6 +119,22 @@ int main(int argc, char **argv) {
             }
             free(opts.role);
             opts.role = strdup(argv[i]);
+        } else if (strcmp(argv[i], "-f") == 0 ||
+            strcmp(argv[i], "--format") == 0) {
+            if (++i >= argc) {
+                fprintf(stderr, "chml: missing value for %s\n", argv[i - 1]);
+                kc_chml_options_free(&opts);
+                return 1;
+            }
+            if (strcmp(argv[i], "chatml") == 0) {
+                opts.format = KC_CHML_FMT_CHATML;
+            } else if (strcmp(argv[i], "gemma") == 0) {
+                opts.format = KC_CHML_FMT_GEMMA;
+            } else {
+                fprintf(stderr, "chml: invalid format '%s'\n", argv[i]);
+                kc_chml_options_free(&opts);
+                return 1;
+            }
         } else {
             fprintf(stderr, "chml: unknown option '%s'\n", argv[i]);
             kc_chml_options_free(&opts);

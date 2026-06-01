@@ -58,6 +58,7 @@ static kc_chml_t *g_signal_ctx = NULL;
 
 struct kc_chml {
     int role;
+    int format;
     kc_chml_options_t opts;
     kc_chml_signal_entry_t *signal_handlers;
     int n_signal_handlers;
@@ -84,6 +85,12 @@ int kc_chml_open(kc_chml_t **out, const kc_chml_options_t *opts) {
 
     ctx->opts = *opts;
     ctx->opts.role = opts->role ? strdup(opts->role) : NULL;
+
+    if (opts->format == KC_CHML_FMT_GEMMA) {
+        ctx->format = KC_CHML_FMT_GEMMA;
+    } else {
+        ctx->format = KC_CHML_FMT_CHATML;
+    }
 
     if (ctx->opts.role) {
         if (strcmp(ctx->opts.role, "system") == 0) {
@@ -140,18 +147,47 @@ char *kc_chml_render(const kc_chml_t *ctx, const char *content) {
 
     size_t role_len = strlen(role_name);
     size_t content_len = strlen(content);
+    size_t total;
+    int n;
+
+    if (ctx->format == KC_CHML_FMT_GEMMA) {
+        if (ctx->role == KC_CHML_ROLE_USER) {
+            total = 11 + role_len + 1 + content_len + 10 + 23 + 1;
+            char *out = malloc(total);
+            if (!out) return NULL;
+            n = snprintf(out, total,
+                "<|turn|>%s\n%s\n<|turn|>\n<|turn|>model\n",
+                role_name, content);
+            if (n < 0 || (size_t)n >= total) {
+                free(out);
+                return NULL;
+            }
+            return out;
+        } else {
+            total = 11 + role_len + 1 + content_len + 10 + 1;
+            char *out = malloc(total);
+            if (!out) return NULL;
+            n = snprintf(out, total,
+                "<|turn|>%s\n%s\n<|turn|>\n",
+                role_name, content);
+            if (n < 0 || (size_t)n >= total) {
+                free(out);
+                return NULL;
+            }
+            return out;
+        }
+    }
 
     size_t prefix_len = 12;
     size_t suffix_len = 12;
 
-    size_t total = prefix_len + role_len + 1 + content_len + suffix_len + 1;
+    total = prefix_len + role_len + 1 + content_len + suffix_len + 1;
     if (ctx->role == KC_CHML_ROLE_USER)
         total += 22;
 
     char *out = malloc(total);
     if (!out) return NULL;
 
-    int n;
     if (ctx->role == KC_CHML_ROLE_USER) {
         n = snprintf(out, total,
             "<|im_start|>%s\n%s\n<|im_end|>\n<|im_start|>assistant\n",
@@ -234,6 +270,17 @@ void kc_chml_options_load_env(kc_chml_options_t *opts) {
                 free(*p);
                 *p = strdup(val);
                 break;
+            }
+        }
+    }
+
+    {
+        const char *fmt = getenv("KC_CHML_FMT");
+        if (fmt) {
+            if (strcmp(fmt, "chatml") == 0) {
+                opts->format = KC_CHML_FMT_CHATML;
+            } else if (strcmp(fmt, "gemma") == 0) {
+                opts->format = KC_CHML_FMT_GEMMA;
             }
         }
     }

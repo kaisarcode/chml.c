@@ -1,7 +1,7 @@
 # chml.c — ChatML Message Wrapper
 
 ## Overview
-Reads text from standard input and wraps it in a single ChatML message (`<|im_start|>role\ncontent\n<|im_end|>`). Supports system, assistant, and user roles. Pure standard C library with no external dependencies.
+Reads text from standard input and wraps it in a single message. Supports system, assistant, and user roles. Two output formats: ChatML (`<|im_start|>role\ncontent\n<|im_end|>`) and Gemma (`<|turn|>role\ncontent\n<|turn|>`). Pure standard C library with no external dependencies.
 
 ## Architecture
 Three-file split following kclib conventions. `chml.h` exposes the opaque `kc_chml_t` type, role constants, and five public functions. `libchml.c` implements the library — string formatting, role management, and memory allocation. `chml.c` is the CLI layer — parses argv, reads stdin, calls libchml functions, and prints to stdout.
@@ -23,8 +23,14 @@ Three-file split following kclib conventions. `chml.h` exposes the opaque `kc_ch
 ### Internal Structures
 | Symbol | Type | Role |
 |--------|------|------|
-| `kc_chml_t` (opaque) | `struct kc_chml` | Allocated context with role field |
-| `struct kc_chml` | `{ int role; }` | Internal — tracks current role constant |
+| `kc_chml_t` (opaque) | `struct kc_chml` | Allocated context with role and format fields |
+| `struct kc_chml` | `{ int role; int format; }` | Internal — tracks role and format constants |
+
+### Format Constants
+| Constant | Value |
+|----------|-------|
+| `KC_CHML_FMT_CHATML` | 0 |
+| `KC_CHML_FMT_GEMMA` | 1 |
 
 ### Role Constants
 | Constant | Value | String |
@@ -40,15 +46,16 @@ Three-file split following kclib conventions. `chml.h` exposes the opaque `kc_ch
 | `kc_chml_set_role(ctx, role)` | `int` | Set role; invalid role returns `KC_CHML_ERROR` |
 | `kc_chml_get_role(ctx)` | `int` | Return current role constant; `KC_CHML_ERROR` if NULL |
 | `kc_chml_get_role_name(ctx)` | `const char *` | Return role string or NULL on error |
-| `kc_chml_render(ctx, content)` | `char *` | Allocate and format `"<\|im_start\|>%s\n%s\n<\|im_end\|>"`; caller frees |
+| `kc_chml_render(ctx, content)` | `char *` | Format message per role and format; caller frees |
 | `kc_chml_close(ctx)` | `void` | Free context; safe on NULL |
 
 ## CLI
 | Argument | Description |
 |----------|-------------|
 | `-r`, `--role ROLE` | Message role: system, assistant, or user |
+| `-f`, `--format FMT` | Output format: `chatml` (default) or `gemma` |
 | `-h`, `--help` | Print usage and exit 0 |
-| `-v`, `--version` | Print version (`chml 1.1.0`) and exit 0 |
+| `-v`, `--version` | Print version (`chml 1.2.0`) and exit 0 |
 
 ### Exit Codes
 | Code | Meaning |
@@ -70,6 +77,8 @@ Three-file split following kclib conventions. `chml.h` exposes the opaque `kc_ch
 | Unknown option | `chml: unknown option '<opt>'` | 1 |
 | Missing role value | `chml: missing value for --role` | 1 |
 | Invalid role | `chml: invalid role '<name>'` | 1 |
+| Missing format value | `chml: missing value for --format` | 1 |
+| Invalid format | `chml: invalid format '<name>'` | 1 |
 | Stdin read failure | `chml: failed to read stdin` | 1 |
 | Out of memory | `chml: out of memory` | 1 |
 | Render failure | `chml: render failed` | 1 |

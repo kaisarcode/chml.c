@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v1.2.0
+
+- Added `-f`, `--format` flag for output format selection.
+- Added `KC_CHML_FMT_CHATML` and `KC_CHML_FMT_GEMMA` format constants.
+- Added `KC_CHML_FMT` environment variable support (`chatml`, `gemma`).
+- Gemma format outputs `<|turn|>role\ncontent\n<|turn|>` instead of ChatML's `<|im_start|>role\ncontent\n<|im_end|>`.
+- User messages in Gemma format append `<|turn|>model\n` to prompt the assistant.
+- Updated test suite with Gemma format tests.
+
 ## v1.1.0
 
 - Added data-driven configuration with table-driven environment variable loading.

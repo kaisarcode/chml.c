@@ -23,12 +23,17 @@ typedef struct kc_chml kc_chml_t;
 #define KC_CHML_ROLE_ASSISTANT  1
 #define KC_CHML_ROLE_USER       2
 
+#define KC_CHML_FMT_CHATML  0
+#define KC_CHML_FMT_GEMMA   1
+
 /**
  * ChatML options.
  * @param role Message role string (e.g., "system", "assistant", "user").
+ * @param format Output format: KC_CHML_FMT_CHATML or KC_CHML_FMT_GEMMA.
  */
 typedef struct kc_chml_options {
     char *role;
+    int format;
 } kc_chml_options_t;
 
 /**
