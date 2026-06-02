@@ -50,6 +50,25 @@ static const int env_config_table_n =
     sizeof(env_config_table) / sizeof(env_config_table[0]);
 
 typedef struct {
+    const char *name;
+    int value;
+} kc_chml_format_entry_t;
+
+static const kc_chml_format_entry_t kc_chml_format_table[] = {
+    { "chatml", KC_CHML_FMT_CHATML },
+    { "qwen", KC_CHML_FMT_CHATML },
+    { "gemma", KC_CHML_FMT_GEMMA },
+    { "llama", KC_CHML_FMT_LLAMA },
+    { "mistral", KC_CHML_FMT_MISTRAL },
+    { "alpaca", KC_CHML_FMT_ALPACA },
+    { "phi", KC_CHML_FMT_PHI },
+    { "zephyr", KC_CHML_FMT_ZEPHYR }
+};
+
+static const int kc_chml_format_table_n =
+    sizeof(kc_chml_format_table) / sizeof(kc_chml_format_table[0]);
+
+typedef struct {
     int sig;
     kc_chml_signal_callback_t cb;
 } kc_chml_signal_entry_t;
@@ -64,6 +83,71 @@ struct kc_chml {
     int n_signal_handlers;
     int signal_handlers_capacity;
 };
+
+/**
+ * Allocate formatted output for a two-string template.
+ * @param format Printf-compatible template.
+ * @param first First string parameter.
+ * @param second Second string parameter.
+ * @return Allocated string, or NULL on failure.
+ */
+static char *kc_chml_render_two(const char *format,
+const char *first,
+const char *second) {
+    int n;
+    char *out;
+    size_t total;
+
+    n = snprintf(NULL, 0, format, first, second);
+    if (n < 0) {
+        return NULL;
+    }
+
+    total = (size_t)n + 1;
+    out = malloc(total);
+    if (!out) {
+        return NULL;
+    }
+
+    n = snprintf(out, total, format, first, second);
+    if (n < 0 || (size_t)n >= total) {
+        free(out);
+        return NULL;
+    }
+
+    return out;
+}
+
+/**
+ * Allocate formatted output for a one-string template.
+ * @param format Printf-compatible template.
+ * @param first First string parameter.
+ * @return Allocated string, or NULL on failure.
+ */
+static char *kc_chml_render_one(const char *format, const char *first) {
+    int n;
+    char *out;
+    size_t total;
+
+    n = snprintf(NULL, 0, format, first);
+    if (n < 0) {
+        return NULL;
+    }
+
+    total = (size_t)n + 1;
+    out = malloc(total);
+    if (!out) {
+        return NULL;
+    }
+
+    n = snprintf(out, total, format, first);
+    if (n < 0 || (size_t)n >= total) {
+        free(out);
+        return NULL;
+    }
+
+    return out;
+}
 
 /**
  * Create a new ChatML context.
@@ -86,10 +170,10 @@ int kc_chml_open(kc_chml_t **out, const kc_chml_options_t *opts) {
     ctx->opts = *opts;
     ctx->opts.role = opts->role ? strdup(opts->role) : NULL;
 
-    if (opts->format == KC_CHML_FMT_GEMMA) {
-        ctx->format = KC_CHML_FMT_GEMMA;
-    } else {
+    if (opts->format < KC_CHML_FMT_CHATML || opts->format > KC_CHML_FMT_ZEPHYR) {
         ctx->format = KC_CHML_FMT_CHATML;
+    } else {
+        ctx->format = opts->format;
     }
 
     if (ctx->opts.role) {
@@ -133,6 +217,27 @@ const char *kc_chml_get_role_name(const kc_chml_t *ctx) {
 }
 
 /**
+ * Resolve a format name to its format constant.
+ * @param name Format name.
+ * @return Format constant, or KC_CHML_ERROR on invalid input.
+ */
+int kc_chml_format_from_name(const char *name) {
+    int i;
+
+    if (!name) {
+        return KC_CHML_ERROR;
+    }
+
+    for (i = 0; i < kc_chml_format_table_n; i++) {
+        if (strcmp(name, kc_chml_format_table[i].name) == 0) {
+            return kc_chml_format_table[i].value;
+        }
+    }
+
+    return KC_CHML_ERROR;
+}
+
+/**
  * Render content into a ChatML message.
  * Allocates and returns a new string. Caller must free.
  * @param ctx Context pointer.
@@ -145,63 +250,71 @@ char *kc_chml_render(const kc_chml_t *ctx, const char *content) {
     const char *role_name = kc_chml_get_role_name(ctx);
     if (!role_name) return NULL;
 
-    size_t role_len = strlen(role_name);
-    size_t content_len = strlen(content);
-    size_t total;
-    int n;
-
     if (ctx->format == KC_CHML_FMT_GEMMA) {
         if (ctx->role == KC_CHML_ROLE_USER) {
-            total = 11 + role_len + 1 + content_len + 10 + 23 + 1;
-            char *out = malloc(total);
-            if (!out) return NULL;
-            n = snprintf(out, total,
+            return kc_chml_render_two(
                 "<|turn|>%s\n%s\n<|turn|>\n<|turn|>model\n",
                 role_name, content);
-            if (n < 0 || (size_t)n >= total) {
-                free(out);
-                return NULL;
-            }
-            return out;
-        } else {
-            total = 11 + role_len + 1 + content_len + 10 + 1;
-            char *out = malloc(total);
-            if (!out) return NULL;
-            n = snprintf(out, total,
-                "<|turn|>%s\n%s\n<|turn|>\n",
-                role_name, content);
-            if (n < 0 || (size_t)n >= total) {
-                free(out);
-                return NULL;
-            }
-            return out;
         }
+        return kc_chml_render_two("<|turn|>%s\n%s\n<|turn|>\n",
+            role_name, content);
     }
 
-    size_t prefix_len = 12;
-    size_t suffix_len = 12;
+    if (ctx->format == KC_CHML_FMT_LLAMA) {
+        if (ctx->role == KC_CHML_ROLE_USER) {
+            return kc_chml_render_two(
+                "<|begin_of_text|><|start_header_id|>%s<|end_header_id|>\n\n%s<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+                role_name, content);
+        }
+        return kc_chml_render_two(
+            "<|begin_of_text|><|start_header_id|>%s<|end_header_id|>\n\n%s<|eot_id|>",
+            role_name, content);
+    }
 
-    total = prefix_len + role_len + 1 + content_len + suffix_len + 1;
-    if (ctx->role == KC_CHML_ROLE_USER)
-        total += 22;
+    if (ctx->format == KC_CHML_FMT_MISTRAL) {
+        if (ctx->role == KC_CHML_ROLE_SYSTEM) {
+            return kc_chml_render_one("[INST] <<SYS>>\n%s\n<</SYS>> [/INST]\n",
+                content);
+        }
+        if (ctx->role == KC_CHML_ROLE_ASSISTANT) {
+            return kc_chml_render_one("%s</s>\n", content);
+        }
+        return kc_chml_render_one("[INST] %s [/INST]\n", content);
+    }
 
-    char *out = malloc(total);
-    if (!out) return NULL;
+    if (ctx->format == KC_CHML_FMT_ALPACA) {
+        if (ctx->role == KC_CHML_ROLE_SYSTEM) {
+            return kc_chml_render_one("### System:\n%s\n", content);
+        }
+        if (ctx->role == KC_CHML_ROLE_ASSISTANT) {
+            return kc_chml_render_one("### Response:\n%s\n", content);
+        }
+        return kc_chml_render_one("### Instruction:\n%s\n\n### Response:\n", content);
+    }
+
+    if (ctx->format == KC_CHML_FMT_PHI) {
+        if (ctx->role == KC_CHML_ROLE_USER) {
+            return kc_chml_render_one("<|user|>\n%s<|end|>\n<|assistant|>\n",
+                content);
+        }
+        return kc_chml_render_two("<|%s|>\n%s<|end|>\n", role_name, content);
+    }
+
+    if (ctx->format == KC_CHML_FMT_ZEPHYR) {
+        if (ctx->role == KC_CHML_ROLE_USER) {
+            return kc_chml_render_two("<|%s|>\n%s</s>\n<|assistant|>\n",
+                role_name, content);
+        }
+        return kc_chml_render_two("<|%s|>\n%s</s>\n", role_name, content);
+    }
 
     if (ctx->role == KC_CHML_ROLE_USER) {
-        n = snprintf(out, total,
+        return kc_chml_render_two(
             "<|im_start|>%s\n%s\n<|im_end|>\n<|im_start|>assistant\n",
             role_name, content);
-    } else {
-        n = snprintf(out, total,
-            "<|im_start|>%s\n%s\n<|im_end|>\n", role_name, content);
     }
-    if (n < 0 || (size_t)n >= total) {
-        free(out);
-        return NULL;
-    }
-
-    return out;
+    return kc_chml_render_two("<|im_start|>%s\n%s\n<|im_end|>\n",
+        role_name, content);
 }
 
 /**
@@ -276,12 +389,9 @@ void kc_chml_options_load_env(kc_chml_options_t *opts) {
 
     {
         const char *fmt = getenv("KC_CHML_FMT");
-        if (fmt) {
-            if (strcmp(fmt, "chatml") == 0) {
-                opts->format = KC_CHML_FMT_CHATML;
-            } else if (strcmp(fmt, "gemma") == 0) {
-                opts->format = KC_CHML_FMT_GEMMA;
-            }
+        int value = kc_chml_format_from_name(fmt);
+        if (value != KC_CHML_ERROR) {
+            opts->format = value;
         }
     }
 }

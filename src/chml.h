@@ -23,13 +23,18 @@ typedef struct kc_chml kc_chml_t;
 #define KC_CHML_ROLE_ASSISTANT  1
 #define KC_CHML_ROLE_USER       2
 
-#define KC_CHML_FMT_CHATML  0
-#define KC_CHML_FMT_GEMMA   1
+#define KC_CHML_FMT_CHATML   0
+#define KC_CHML_FMT_GEMMA    1
+#define KC_CHML_FMT_LLAMA    2
+#define KC_CHML_FMT_MISTRAL  3
+#define KC_CHML_FMT_ALPACA   4
+#define KC_CHML_FMT_PHI      5
+#define KC_CHML_FMT_ZEPHYR   6
 
 /**
  * ChatML options.
  * @param role Message role string (e.g., "system", "assistant", "user").
- * @param format Output format: KC_CHML_FMT_CHATML or KC_CHML_FMT_GEMMA.
+ * @param format Output format constant.
  */
 typedef struct kc_chml_options {
     char *role;
@@ -63,6 +68,13 @@ int kc_chml_get_role(const kc_chml_t *ctx);
  * @return Role string ("system", "assistant", "user").
  */
 const char *kc_chml_get_role_name(const kc_chml_t *ctx);
+
+/**
+ * Resolve a format name to its format constant.
+ * @param name Format name.
+ * @return Format constant, or KC_CHML_ERROR on invalid input.
+ */
+int kc_chml_format_from_name(const char *name);
 
 /**
  * Render content into a ChatML message.

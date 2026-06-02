@@ -200,6 +200,104 @@ kc_test_format_gemma_system() {
     kc_test_pass "format gemma system"
 }
 
+# Tests that -f qwen matches the default ChatML output.
+# @return 0 on success, 1 on failure.
+kc_test_format_qwen() {
+    outfile=$(mktemp)
+    printf 'Hello' | "$BIN" -f qwen > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '<|im_start|>user\nHello\n<|im_end|>\n<|im_start|>assistant\n' > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
+        kc_test_fail "format qwen output mismatch"
+        return 1
+    fi
+    rm -f "$outfile" "$exfile"
+    kc_test_pass "format qwen"
+}
+
+# Tests that -f llama produces correct Llama format with default role.
+# @return 0 on success, 1 on failure.
+kc_test_format_llama() {
+    outfile=$(mktemp)
+    printf 'Hello' | "$BIN" -f llama > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\nHello<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n' > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
+        kc_test_fail "format llama output mismatch"
+        return 1
+    fi
+    rm -f "$outfile" "$exfile"
+    kc_test_pass "format llama"
+}
+
+# Tests that -f mistral produces correct Mistral format with default role.
+# @return 0 on success, 1 on failure.
+kc_test_format_mistral() {
+    outfile=$(mktemp)
+    printf 'Hello' | "$BIN" -f mistral > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '[INST] Hello [/INST]\n' > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
+        kc_test_fail "format mistral output mismatch"
+        return 1
+    fi
+    rm -f "$outfile" "$exfile"
+    kc_test_pass "format mistral"
+}
+
+# Tests that -f alpaca produces correct Alpaca format with default role.
+# @return 0 on success, 1 on failure.
+kc_test_format_alpaca() {
+    outfile=$(mktemp)
+    instruction_label='### Instruction:'
+    response_label='### Response:'
+    printf 'Hello' | "$BIN" -f alpaca > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '%s\nHello\n\n%s\n' "$instruction_label" "$response_label" > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
+        kc_test_fail "format alpaca output mismatch"
+        return 1
+    fi
+    rm -f "$outfile" "$exfile"
+    kc_test_pass "format alpaca"
+}
+
+# Tests that -f phi produces correct Phi format with default role.
+# @return 0 on success, 1 on failure.
+kc_test_format_phi() {
+    outfile=$(mktemp)
+    printf 'Hello' | "$BIN" -f phi > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '<|user|>\nHello<|end|>\n<|assistant|>\n' > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
+        kc_test_fail "format phi output mismatch"
+        return 1
+    fi
+    rm -f "$outfile" "$exfile"
+    kc_test_pass "format phi"
+}
+
+# Tests that -f zephyr produces correct Zephyr format with default role.
+# @return 0 on success, 1 on failure.
+kc_test_format_zephyr() {
+    outfile=$(mktemp)
+    printf 'Hello' | "$BIN" -f zephyr > "$outfile" 2>/dev/null
+    exfile=$(mktemp)
+    printf '<|user|>\nHello</s>\n<|assistant|>\n' > "$exfile"
+    if ! cmp -s "$outfile" "$exfile"; then
+        rm -f "$outfile" "$exfile"
+        kc_test_fail "format zephyr output mismatch"
+        return 1
+    fi
+    rm -f "$outfile" "$exfile"
+    kc_test_pass "format zephyr"
+}
+
 # Tests that an invalid format value fails.
 # @return 0 on success, 1 on failure.
 kc_test_invalid_format() {
@@ -238,6 +336,12 @@ kc_test_main() {
     kc_test_missing_role_value || failed=$((failed + 1))
     kc_test_format_gemma      || failed=$((failed + 1))
     kc_test_format_gemma_system || failed=$((failed + 1))
+    kc_test_format_qwen       || failed=$((failed + 1))
+    kc_test_format_llama      || failed=$((failed + 1))
+    kc_test_format_mistral    || failed=$((failed + 1))
+    kc_test_format_alpaca     || failed=$((failed + 1))
+    kc_test_format_phi        || failed=$((failed + 1))
+    kc_test_format_zephyr     || failed=$((failed + 1))
     kc_test_invalid_format    || failed=$((failed + 1))
     kc_test_missing_format_value || failed=$((failed + 1))
 

@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v1.3.0
+
+- Added `qwen` as an alias for the default ChatML format.
+- Added `llama`, `mistral`, `alpaca`, `phi`, and `zephyr` output formats.
+- Added `kc_chml_format_from_name()` to resolve CLI and environment format names through the public API.
+- Updated `KC_CHML_FMT` environment variable support for all format names.
+- Updated tests and README examples for the expanded format set.
+
 ## v1.2.0
 
 - Added `-f`, `--format` flag for output format selection.

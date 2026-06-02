@@ -1,6 +1,6 @@
 # chml.c - ChatML Message Wrapper
 
-`chml` reads text from standard input and wraps it in a single message. It supports the `system`, `assistant`, and `user` roles, defaulting to `user`. Two output formats are available: ChatML (`<|im_start|>`) and Gemma (`<|turn|>`).
+`chml` reads text from standard input and wraps it in a single message. It supports the `system`, `assistant`, and `user` roles, defaulting to `user`. The default output format is ChatML (`<|im_start|>`), with additional model template formats available through `-f` or `--format`.
 
 ---
 
@@ -20,6 +20,10 @@ echo 'You are a helpful assistant.' | ./bin/x86_64/linux/chml --role system
 echo 'Hello' | ./bin/x86_64/linux/chml --format gemma
 ```
 
+```bash
+echo 'Hello' | ./bin/x86_64/linux/chml --format llama
+```
+
 ### Output (ChatML, default)
 
 ```
@@ -37,12 +41,52 @@ Hello
 <|turn|>model
 ```
 
+### Output (Llama)
+
+```
+<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+
+Hello<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+```
+
+### Output (Mistral)
+
+```
+[INST] Hello [/INST]
+```
+
+### Output (Alpaca)
+
+```
+### Instruction:
+Hello
+
+### Response:
+```
+
+### Output (Phi)
+
+```
+<|user|>
+Hello<|end|>
+<|assistant|>
+```
+
+### Output (Zephyr)
+
+```
+<|user|>
+Hello</s>
+<|assistant|>
+```
+
 ### Parameters
 
 | Flag | Description |
 | :--- | :--- |
 | `-r`, `--role ROLE` | Message role: `system`, `assistant`, or `user` |
-| `-f`, `--format FMT` | Output format: `chatml` (default) or `gemma` |
+| `-f`, `--format FMT` | Output format: `chatml` (default), `qwen`, `gemma`, `llama`, `mistral`, `alpaca`, `phi`, or `zephyr` |
 | `-h`, `--help` | Show help and usage |
 | `-v`, `--version` | Show version |
 
@@ -83,6 +127,11 @@ kc_chml_close(ctx);
 |----------|-------|
 | `KC_CHML_FMT_CHATML` | 0 |
 | `KC_CHML_FMT_GEMMA` | 1 |
+| `KC_CHML_FMT_LLAMA` | 2 |
+| `KC_CHML_FMT_MISTRAL` | 3 |
+| `KC_CHML_FMT_ALPACA` | 4 |
+| `KC_CHML_FMT_PHI` | 5 |
+| `KC_CHML_FMT_ZEPHYR` | 6 |
 
 ---
 

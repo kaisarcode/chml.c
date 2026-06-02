@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KC_CHML_VERSION "1.2.0"
+#define KC_CHML_VERSION "1.3.0"
 
 /**
  * Reads text from standard input into a dynamically allocated buffer.
@@ -71,7 +71,7 @@ static void kc_print_help(const char *name) {
     printf("\n");
     printf("Options:\n");
     printf("  -r, --role ROLE    Message role: system, assistant, or user\n");
-    printf("  -f, --format FMT   Output format: chatml (default) or gemma\n");
+    printf("  -f, --format FMT   Output format: chatml, qwen, gemma, llama, mistral, alpaca, phi, or zephyr\n");
     printf("  -h, --help         Show this help\n");
     printf("  -v, --version      Show version\n");
     printf("\n");
@@ -126,11 +126,8 @@ int main(int argc, char **argv) {
                 kc_chml_options_free(&opts);
                 return 1;
             }
-            if (strcmp(argv[i], "chatml") == 0) {
-                opts.format = KC_CHML_FMT_CHATML;
-            } else if (strcmp(argv[i], "gemma") == 0) {
-                opts.format = KC_CHML_FMT_GEMMA;
-            } else {
+            opts.format = kc_chml_format_from_name(argv[i]);
+            if (opts.format == KC_CHML_ERROR) {
                 fprintf(stderr, "chml: invalid format '%s'\n", argv[i]);
                 kc_chml_options_free(&opts);
                 return 1;
