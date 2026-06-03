@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.3.1
+
+- Fixed `chml_signal_listener` to restore default signal behavior (SIG_DFL)
+  when no `on_signal` handler is registered. Moved `<signal.h>` include to
+  be unconditional for MinGW compatibility.
+
 ## v1.3.0
 
 - Added `qwen` as an alias for the default ChatML format.

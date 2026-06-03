@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KC_CHML_VERSION "1.3.0"
+#define KC_CHML_VERSION "1.3.1"
 
 /**
  * Reads text from standard input into a dynamically allocated buffer.
