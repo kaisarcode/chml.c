@@ -13,8 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KC_CHML_VERSION "1.3.1"
-
 /**
  * Reads text from standard input into a dynamically allocated buffer.
  * @param out_text Destination pointer for the allocated text.
@@ -86,7 +84,7 @@ static void kc_print_help(const char *name) {
  * @return None.
  */
 static void kc_print_version(void) {
-    printf("chml %s\n", KC_CHML_VERSION);
+    printf("chml build %llu\n", (unsigned long long)kc_chml_version());
 }
 
 /**

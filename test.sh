@@ -1,5 +1,5 @@
 #!/bin/sh
-# test.sh
+# Chml validation and functional test harness
 # Summary: Validation suite for chml functionality.
 # Author:  KaisarCode
 # Website: https://kaisarcode.com

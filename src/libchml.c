@@ -17,8 +17,21 @@
 #include <windows.h>
 #endif
 #include <stddef.h>
+#include <stdint.h>
 
 #include "chml.h"
+
+#ifndef KC_CHML_BUILD_VERSION
+#define KC_CHML_BUILD_VERSION 0
+#endif
+
+/**
+ * Returns the build version generated at compile time.
+ * @return Unix timestamp for the current build.
+ */
+uint64_t kc_chml_version(void) {
+    return (uint64_t)KC_CHML_BUILD_VERSION;
+}
 
 #include <stdio.h>
 #include <stdlib.h>

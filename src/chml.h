@@ -10,6 +10,8 @@
 #ifndef KC_CHML_H
 #define KC_CHML_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -151,6 +153,12 @@ int kc_chml_listen_signal(kc_chml_t *ctx, int sig_id);
  * @return None.
  */
 void kc_chml_signal_listener(int sig);
+
+/**
+ * Returns the build version generated at compile time.
+ * @return Unix timestamp for the current build.
+ */
+uint64_t kc_chml_version(void);
 
 #ifdef __cplusplus
 }
