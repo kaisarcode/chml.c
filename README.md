@@ -148,13 +148,15 @@ kc_chml_close(ctx);
 
 ## Build
 
+Compiled artifacts are generated under `bin/{arch}/{platform}/` for the host architecture running the build.
+
 ```bash
 make clean && make
 ```
 
-Compiled artifacts are generated under `bin/{arch}/{platform}/`.
-
 ### Multiarch Builds
+
+The project is prepared to build artifacts for multiple architectures under `bin/{arch}/{platform}/`. A plain `make` builds only the current host architecture.
 
 ```bash
 make all
