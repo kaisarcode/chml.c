@@ -317,6 +317,39 @@ kc_test_missing_format_value() {
     kc_test_pass "missing format value"
 }
 
+# Tests that two contexts can coexist and stop is isolated per context.
+# @return 0 on success, 1 on failure.
+kc_test_multictx_stop() {
+    ROOT=$(cd "$(dirname "$0")" && pwd)
+    ARCH=$(kc_test_arch)
+    PLATFORM=$(kc_test_platform)
+    LIB_PATH="$ROOT/bin/$ARCH/$PLATFORM/libchml.a"
+    TMP=$(mktemp -d)
+
+    {
+        printf '%s\n' '#include "chml.h"'
+        printf '%s\n' '#include <stdio.h>'
+        printf '%s\n' 'int main(void) {'
+        printf '%s\n' '    kc_chml_options_t opts = kc_chml_options_default();'
+        printf '%s\n' '    kc_chml_t *a, *b;'
+        printf '%s\n' '    if (kc_chml_open(&a, &opts) != KC_CHML_OK) return 1;'
+        printf '%s\n' '    if (kc_chml_open(&b, &opts) != KC_CHML_OK) { kc_chml_close(a); return 1; }'
+        printf '%s\n' '    if (kc_chml_stop(NULL) != KC_CHML_ERROR) { kc_chml_close(a); kc_chml_close(b); return 2; }'
+        printf '%s\n' '    if (kc_chml_stop(a) != KC_CHML_OK) { kc_chml_close(a); kc_chml_close(b); return 3; }'
+        printf '%s\n' '    if (kc_chml_stop(b) != KC_CHML_OK) { kc_chml_close(a); kc_chml_close(b); return 4; }'
+        printf '%s\n' '    if (kc_chml_stop(a) != KC_CHML_OK) { kc_chml_close(a); kc_chml_close(b); return 5; }'
+        printf '%s\n' '    kc_chml_close(a);'
+        printf '%s\n' '    kc_chml_close(b);'
+        printf '%s\n' '    return 0;'
+        printf '%s\n' '}'
+    } > "$TMP/multictx.c"
+
+    cc -I "$ROOT/src" "$TMP/multictx.c" "$LIB_PATH" -o "$TMP/multictx"
+    "$TMP/multictx" || { rm -rf "$TMP"; kc_test_fail "multi-context stop: two contexts coexist, stop is isolated"; return 1; }
+    rm -rf "$TMP"
+    kc_test_pass "multi-context stop"
+}
+
 # Runs the full validation suite.
 # @return 0 on success, 1 on failure.
 kc_test_main() {
@@ -343,6 +376,7 @@ kc_test_main() {
     kc_test_format_zephyr     || failed=$((failed + 1))
     kc_test_invalid_format    || failed=$((failed + 1))
     kc_test_missing_format_value || failed=$((failed + 1))
+    kc_test_multictx_stop   || failed=$((failed + 1))
 
     return $failed
 }

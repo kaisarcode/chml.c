@@ -88,6 +88,15 @@ static void kc_print_version(void) {
 }
 
 /**
+ * Signal handler callback that requests stop.
+ * @param ctx ChatML context.
+ * @return None.
+ */
+static void kc_chml_stop_handler(kc_chml_t *ctx) {
+    if (ctx) kc_chml_stop(ctx);
+}
+
+/**
  * Entry point.
  * @param argc Argument count.
  * @param argv Argument vector.
@@ -166,6 +175,8 @@ int main(int argc, char **argv) {
             stdin_text[--sl] = '\0';
     }
 
+    kc_chml_on_signal(ctx, 2, kc_chml_stop_handler);
+    kc_chml_on_signal(ctx, 15, kc_chml_stop_handler);
     kc_chml_listen_signals(ctx);
 #ifndef _WIN32
     kc_chml_listen_signal(ctx, 2);

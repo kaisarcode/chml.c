@@ -87,7 +87,9 @@ typedef struct {
     kc_chml_signal_callback_t cb;
 } kc_chml_signal_entry_t;
 
-static kc_chml_t *g_signal_ctx = NULL;
+static kc_chml_t **g_signal_ctx_list = NULL;
+static int g_signal_ctx_cap = 0;
+static int g_signal_ctx_count = 0;
 
 struct kc_chml {
     int role;
@@ -96,6 +98,7 @@ struct kc_chml {
     kc_chml_signal_entry_t *signal_handlers;
     int n_signal_handlers;
     int signal_handlers_capacity;
+    volatile sig_atomic_t stop_requested;
 };
 
 /**
@@ -337,8 +340,16 @@ char *kc_chml_render(const kc_chml_t *ctx, const char *content) {
  * @return None.
  */
 void kc_chml_close(kc_chml_t *ctx) {
+    int i;
     if (!ctx) {
         return;
+    }
+
+    for (i = 0; i < g_signal_ctx_count; i++) {
+        if (g_signal_ctx_list[i] == ctx) {
+            g_signal_ctx_list[i] = g_signal_ctx_list[--g_signal_ctx_count];
+            break;
+        }
     }
 
     kc_chml_options_free(&ctx->opts);
@@ -425,6 +436,17 @@ void kc_chml_options_free(kc_chml_options_t *opts) {
 }
 
 /**
+ * Request stop for a specific ChatML context.
+ * @param ctx Context pointer.
+ * @return KC_CHML_OK on success, or KC_CHML_ERROR on failure.
+ */
+int kc_chml_stop(kc_chml_t *ctx) {
+    if (!ctx) return KC_CHML_ERROR;
+    ctx->stop_requested = 1;
+    return KC_CHML_OK;
+}
+
+/**
  * Register a handler for a library-level signal number.
  * @param ctx ChatML context.
  * @param sig Application-defined signal number.
@@ -508,11 +530,16 @@ int kc_chml_raise_signal(kc_chml_t *ctx, int sig) {
  * @return KC_CHML_OK on success, or KC_CHML_ERROR if ctx is NULL.
  */
 int kc_chml_listen_signals(kc_chml_t *ctx) {
-    if (!ctx) {
-        return KC_CHML_ERROR;
+    if (!ctx) return KC_CHML_ERROR;
+    if (g_signal_ctx_count >= g_signal_ctx_cap) {
+        int new_cap = g_signal_ctx_cap ? g_signal_ctx_cap * 2 : 4;
+        kc_chml_t **new_list = (kc_chml_t **)realloc(g_signal_ctx_list,
+            (size_t)new_cap * sizeof(kc_chml_t *));
+        if (!new_list) return KC_CHML_ERROR;
+        g_signal_ctx_list = new_list;
+        g_signal_ctx_cap = new_cap;
     }
-
-    g_signal_ctx = ctx;
+    g_signal_ctx_list[g_signal_ctx_count++] = ctx;
     return KC_CHML_OK;
 }
 
@@ -523,18 +550,21 @@ int kc_chml_listen_signals(kc_chml_t *ctx) {
  * @return KC_CHML_OK on success, or KC_CHML_ERROR on failure.
  */
 int kc_chml_listen_signal(kc_chml_t *ctx, int sig_id) {
-    if (!ctx) {
-        return KC_CHML_ERROR;
+    if (!ctx) return KC_CHML_ERROR;
+    if (g_signal_ctx_count >= g_signal_ctx_cap) {
+        int new_cap = g_signal_ctx_cap ? g_signal_ctx_cap * 2 : 4;
+        kc_chml_t **new_list = (kc_chml_t **)realloc(g_signal_ctx_list,
+            (size_t)new_cap * sizeof(kc_chml_t *));
+        if (!new_list) return KC_CHML_ERROR;
+        g_signal_ctx_list = new_list;
+        g_signal_ctx_cap = new_cap;
     }
-
-    g_signal_ctx = ctx;
-
+    g_signal_ctx_list[g_signal_ctx_count++] = ctx;
 #ifdef _WIN32
     (void)sig_id;
 #else
     signal(sig_id, kc_chml_signal_listener);
 #endif
-
     return KC_CHML_OK;
 }
 
@@ -544,8 +574,12 @@ int kc_chml_listen_signal(kc_chml_t *ctx, int sig_id) {
  * @return None.
  */
 void kc_chml_signal_listener(int sig) {
-    if (g_signal_ctx && kc_chml_raise_signal(g_signal_ctx, sig) == 0)
-        return;
+    int i;
+    for (i = 0; i < g_signal_ctx_count; i++) {
+        if (g_signal_ctx_list[i] &&
+            kc_chml_raise_signal(g_signal_ctx_list[i], sig) == 0)
+            return;
+    }
     signal(sig, SIG_DFL);
     raise(sig);
 }

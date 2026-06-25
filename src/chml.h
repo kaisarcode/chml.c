@@ -20,6 +20,7 @@ typedef struct kc_chml kc_chml_t;
 
 #define KC_CHML_OK      0
 #define KC_CHML_ERROR  -1
+#define KC_CHML_ESTOP  -3
 
 #define KC_CHML_ROLE_SYSTEM     0
 #define KC_CHML_ROLE_ASSISTANT  1
@@ -86,6 +87,13 @@ int kc_chml_format_from_name(const char *name);
  * @return Allocated ChatML string or NULL on failure.
  */
 char *kc_chml_render(const kc_chml_t *ctx, const char *content);
+
+/**
+ * Request stop for a specific ChatML context.
+ * @param ctx Context pointer.
+ * @return KC_CHML_OK on success, or KC_CHML_ERROR on failure.
+ */
+int kc_chml_stop(kc_chml_t *ctx);
 
 /**
  * Release a ChatML context.
