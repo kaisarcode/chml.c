@@ -17,6 +17,9 @@ endif()
 
 if(NOT MSVC)
     add_compile_options(-O3 -Wall -Wextra -Werror)
+    if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        add_compile_options(-Wno-unused-command-line-argument)
+    endif()
     if(CHML_NATIVE)
         add_compile_options(-march=native)
     endif()
@@ -37,7 +40,7 @@ if(NOT CHML_TEST_EXTERNAL_ARTIFACTS)
 
     target_include_directories(chml PRIVATE src)
 
-    if(UNIX AND NOT ANDROID)
+    if(UNIX AND NOT ANDROID AND NOT APPLE)
         target_link_libraries(chml pthread m)
     endif()
 
@@ -50,7 +53,7 @@ if(NOT CHML_TEST_EXTERNAL_ARTIFACTS)
     set_target_properties(chml_shared PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     target_include_directories(chml_shared PRIVATE src)
 
-    if(UNIX AND NOT ANDROID)
+    if(UNIX AND NOT ANDROID AND NOT APPLE)
         target_link_libraries(chml_shared pthread m)
     endif()
 endif()
@@ -80,7 +83,7 @@ if(CHML_BUILD_TESTS)
     target_include_directories(chml_contract_test PRIVATE src)
     target_link_libraries(chml_contract_test PRIVATE ${CHML_TEST_SHARED_TARGET})
 
-    if(UNIX AND NOT ANDROID)
+    if(UNIX AND NOT ANDROID AND NOT APPLE)
         target_link_libraries(chml_contract_test PRIVATE m)
     endif()
 
